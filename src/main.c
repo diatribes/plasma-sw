@@ -12,14 +12,14 @@ Color cpu_data[W * H];
 Vector2 drop_velocity = {1, 1};
 Vector2 drop = {0};
 
-inline float dist(float x1, float y1, float x2, float y2)
+inline double dist(double x1, double y1, double x2, double y2)
 {
     return sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
 }
 
 void update_drop()
 {
-    float drop_half = DROP_SIZE / 2.f;
+    double drop_half = DROP_SIZE / 2.f;
 
     drop.x += drop_velocity.x;
     drop.y += drop_velocity.y;
@@ -44,22 +44,22 @@ void update_drop()
 
 void draw(double time, int num_dists)
 {
-    float value = 0;
-    float t = time * 50.f;
+    double value = 0;
+    double t = time * 50.f;
 
     for(int y = 0; y < H; y++) {
         for(int x = 0; x < W; x++) {
 
             // plasma pattern
             value = 0;
-            float d1 = dist(x + t, y, W, H) / 17.f;
-            float d2 = dist(x, y + t * 2.f, W / 2.f, H / 2.f) / 14.f;
-            float d3 = dist(x, y + t * 1.f, W * 2, H * 2) / 13.f;
-            float d4 = dist(x + t, y, 0, 0) / 12.f;
-            value += sinf(d1) + sinf(d2) + sinf(d3) + sinf(d4);
+            double d1 = dist(x + t, y, W, H) / 17.f;
+            double d2 = dist(x, y + t * 2.f, W / 2.f, H / 2.f) / 14.f;
+            double d3 = dist(x, y + t * 1.f, W * 2, H * 2) / 13.f;
+            double d4 = dist(x + t, y, 0, 0) / 12.f;
+            value += sin(d1) + sin(d2) + sin(d3) + sin(d4);
 
             // droplet
-            float drop_dist = dist(x, y, drop.x, drop.y);
+            double drop_dist = dist(x, y, drop.x, drop.y);
             if (drop_dist < DROP_SIZE / 2.f) {
                 d1 = dist(x, y, W, H) / 17.f;
                 d2 = dist(x, y, W / 2.f, H / 2.f) / 14.f;
@@ -69,10 +69,10 @@ void draw(double time, int num_dists)
                 d2 *= drop_dist / 70.f + cos(drop_dist / 100.f) + sin(drop_dist / 100.f);
                 d3 *= drop_dist / 70.f + cos(drop_dist / 100.f) + sin(drop_dist / 100.f);
                 d4 *= drop_dist / 70.f + cos(drop_dist / 100.f) + sin(drop_dist / 100.f);
-                value += sinf(d1) + sinf(d2) + sinf(d3) + sinf(d4);
+                value += sin(d1) + sin(d2) + sin(d3) + sin(d4);
             }
             int color = (32 + value) * 32;//(int)((8 + value)) * 32;
-            int r = 100 + color + cosf(t / 10.f) * 20;
+            int r = 100 + color + cos(t / 10.f) * 20;
             int g = 10 + color;
             int b = 10 + 255 - (color * sin(t / 400.f));
             int a = 255;
