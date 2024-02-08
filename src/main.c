@@ -19,7 +19,7 @@ inline double dist(double x1, double y1, double x2, double y2)
 
 void update_drop()
 {
-    double drop_half = DROP_SIZE / 2.f;
+    double drop_half = DROP_SIZE / 2.0;
 
     drop.x += drop_velocity.x;
     drop.y += drop_velocity.y;
@@ -45,36 +45,36 @@ void update_drop()
 void draw(double time, int num_dists)
 {
     double value = 0;
-    double t = time * 50.f;
+    double t = time * 50.0;
 
     for(int y = 0; y < H; y++) {
         for(int x = 0; x < W; x++) {
 
             // plasma pattern
             value = 0;
-            double d1 = dist(x + t, y, W, H) / 17.f;
-            double d2 = dist(x, y + t * 2.f, W / 2.f, H / 2.f) / 14.f;
-            double d3 = dist(x, y + t * 1.f, W * 2, H * 2) / 13.f;
-            double d4 = dist(x + t, y, 0, 0) / 12.f;
+            double d1 = dist(x + t, y, W, H) / 17.0;
+            double d2 = dist(x, y + t * 2.0, W / 2.0, H / 2.0) / 14.0;
+            double d3 = dist(x, y + t * 1.0, W * 2, H * 2) / 13.0;
+            double d4 = dist(x + t, y, 0, 0) / 12.0;
             value += sin(d1) + sin(d2) + sin(d3) + sin(d4);
 
             // droplet
             double drop_dist = dist(x, y, drop.x, drop.y);
-            if (drop_dist < DROP_SIZE / 2.f) {
-                d1 = dist(x, y, W, H) / 17.f;
-                d2 = dist(x, y, W / 2.f, H / 2.f) / 14.f;
-                d3 = dist(x, y, W * 2, H * 2) / 13.f;
-                d4 = dist(x, y, 0, 0) / 12.f;
-                d1 *= drop_dist / 70.f + cos(drop_dist / 100.f) + sin(drop_dist / 100.f);
-                d2 *= drop_dist / 70.f + cos(drop_dist / 100.f) + sin(drop_dist / 100.f);
-                d3 *= drop_dist / 70.f + cos(drop_dist / 100.f) + sin(drop_dist / 100.f);
-                d4 *= drop_dist / 70.f + cos(drop_dist / 100.f) + sin(drop_dist / 100.f);
+            if (drop_dist < DROP_SIZE / 2.0) {
+                d1 = dist(x, y, W, H) / 17.0;
+                d2 = dist(x, y, W / 2.0, H / 2.0) / 14.0;
+                d3 = dist(x, y, W * 2, H * 2) / 13.0;
+                d4 = dist(x, y, 0, 0) / 12.0;
+                d1 *= drop_dist / 70.0 + cos(drop_dist / 100.0) + sin(drop_dist / 100.0);
+                d2 *= drop_dist / 70.0 + cos(drop_dist / 100.0) + sin(drop_dist / 100.0);
+                d3 *= drop_dist / 70.0 + cos(drop_dist / 100.0) + sin(drop_dist / 100.0);
+                d4 *= drop_dist / 70.0 + cos(drop_dist / 100.0) + sin(drop_dist / 100.0);
                 value += sin(d1) + sin(d2) + sin(d3) + sin(d4);
             }
             int color = (32 + value) * 32;//(int)((8 + value)) * 32;
-            int r = 100 + color + cos(t / 10.f) * 20;
+            int r = 100 + color + cos(t / 10.0) * 20;
             int g = 10 + color;
-            int b = 10 + 255 - (color * sin(t / 400.f));
+            int b = 10 + 255 - (color * sin(t / 400.0));
             int a = 255;
             cpu_data[y * W + x] = (Color) { r, g, b, a };
         }
@@ -118,12 +118,12 @@ int main(int argc, char * argv[])
         update_drop();
         draw(time, num_dists);
         BeginDrawing();
-        UpdateTexture(gpu_data, cpu_data);
-        Rectangle source = {0, 0, W, H};
-        Rectangle dest = {0, 0, GetRenderWidth(), GetRenderHeight()};
-        Vector2 origin = {0, 0};
-        DrawTexturePro(gpu_data, source, dest, origin, 0.0, WHITE);
-        DrawFPS(10, 10);
+            UpdateTexture(gpu_data, cpu_data);
+            Rectangle source = {0, 0, W, H};
+            Rectangle dest = {0, 0, GetRenderWidth(), GetRenderHeight()};
+            Vector2 origin = {0, 0};
+            DrawTexturePro(gpu_data, source, dest, origin, 0.0, WHITE);
+            DrawFPS(10, 10);
         EndDrawing();
 
     }
