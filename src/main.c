@@ -118,7 +118,6 @@ int main(int argc, char * argv[])
         update_drop();
         draw(time, num_dists);
         BeginDrawing();
-        ClearBackground(WHITE);
         UpdateTexture(gpu_data, cpu_data);
         Rectangle source = {0, 0, W, H};
         Rectangle dest = {0, 0, GetRenderWidth(), GetRenderHeight()};
