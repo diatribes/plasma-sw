@@ -101,7 +101,7 @@ int main(int argc, char * argv[])
 
     SetTargetFPS(TARGET_FPS);
     DisableCursor();
-    ToggleBorderlessWindowed();
+    //ToggleBorderlessWindowed();
     while (!WindowShouldClose()) {
 
         time = GetTime();
