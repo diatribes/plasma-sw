@@ -86,7 +86,7 @@ int main(int argc, char * argv[])
     double time;
     unsigned num_dists = 3;
 
-    InitWindow(W, H, "matt wuz here");
+    InitWindow(W, H, "software plasma");
 
     Image img = {
         .width = W,
