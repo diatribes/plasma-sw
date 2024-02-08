@@ -45,7 +45,7 @@ void update_drop()
 void draw(double time, int num_dists)
 {
     double value = 0;
-    double t = time * 50.0;
+    double t = time * 10.0;
 
     for(int y = 0; y < H; y++) {
         for(int x = 0; x < W; x++) {
@@ -61,10 +61,10 @@ void draw(double time, int num_dists)
             // droplet
             double drop_dist = dist(x, y, drop.x, drop.y);
             if (drop_dist < DROP_SIZE / 2.0) {
-                d1 = dist(x, y, W, H) / 17.0;
-                d2 = dist(x, y, W / 2.0, H / 2.0) / 14.0;
-                d3 = dist(x, y, W * 2, H * 2) / 13.0;
-                d4 = dist(x, y, 0, 0) / 12.0;
+                d1 = dist(x, y, W, H) / 27.0;
+                d2 = dist(x, y, W / 2.0, H / 2.0) / 24.0;
+                d3 = dist(x, y, W * 2, H * 2) / 23.0;
+                d4 = dist(x, y, 0, 0) / 22.0;
                 d1 *= drop_dist / 70.0 + cos(drop_dist / 100.0) + sin(drop_dist / 100.0);
                 d2 *= drop_dist / 70.0 + cos(drop_dist / 100.0) + sin(drop_dist / 100.0);
                 d3 *= drop_dist / 70.0 + cos(drop_dist / 100.0) + sin(drop_dist / 100.0);
