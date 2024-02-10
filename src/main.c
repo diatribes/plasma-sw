@@ -10,10 +10,14 @@
 
 #define MODE_PLASMA_DROP 1
 #define MODE_COLORFUL_CURTAINS 2
-#define MODE_METABALLS 3
-#define MODE_MAX 3
+#define MODE_METABALLS_RGB 3
+#define MODE_METABALLS_HSV 4
+#define MODE_METABALLS_WAVY_HSV 5
+#define MODE_MAX 5
 
 #define BLOBS_MAX 10
+
+#define CLAMP(x, low, high)  (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
 
 Color cpu_data[W * H];
 int alpha = 255;
@@ -41,6 +45,25 @@ int mode = MODE_PLASMA_DROP;
 inline double dist(double x1, double y1, double x2, double y2)
 {
     return sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
+}
+
+void init_blob()
+{
+    for (int i = 0; i < BLOBS_MAX; i++) {
+        blob[i].pos.x = random(0, W);
+        blob[i].pos.y = random(0, H);
+        blob[i].vel.x = 1;
+        blob[i].vel.y = 1;
+        blob[i].radius = random(10, 30);
+    }
+}
+
+void init_drop()
+{
+    drop.pos.x = W / 2;
+    drop.pos.y = H / 2;
+    drop.vel.x = 1;
+    drop.vel.y = 1;
 }
 
 void update_blob()
@@ -93,26 +116,7 @@ void update_drop()
     }
 }
 
-void init_blob()
-{
-    for (int i = 0; i < BLOBS_MAX; i++) {
-        blob[i].pos.x = random(0, W);
-        blob[i].pos.y = random(0, H);
-        blob[i].vel.x = 1;
-        blob[i].vel.y = 1;
-        blob[i].radius = random(W / 30, W / 5);
-    }
-}
-
-void init_drop()
-{
-    drop.pos.x = W / 2;
-    drop.pos.y = H / 2;
-    drop.vel.x = 1;
-    drop.vel.y = 1;
-}
-
-void draw_blobs(double time)
+void draw_blobs_rgb(double time)
 {
     for (int x = 0; x < W; x++) {
         for (int y = 0; y < H; y++) {
@@ -127,6 +131,22 @@ void draw_blobs(double time)
             int g = 255 - r;
             int b = 32 + sum * 50;
             cpu_data[y * W + x] = (Color) { r, g, b, alpha };
+        }
+    }
+}
+
+void draw_blobs_hsv(double time)
+{
+    for (int x = 0; x < W; x++) {
+        for (int y = 0; y < H; y++) {
+            double sum = 0;
+            for (int i = 0; i < BLOBS_MAX; i++) {
+                double d = dist(x, y, blob[i].pos.x, blob[i].pos.y);
+                sum += 80.0 * (double)blob[i].radius / d;
+            }
+            Color c = ColorFromHSV(CLAMP(sum, 20, 360), 1.0, 1.0);
+            c.a = alpha;
+            cpu_data[y * W + x] = c;
         }
     }
 }
@@ -149,10 +169,26 @@ void draw_colorful_curtains(double time)
     }
 }
 
+void draw_wavy_blobs_hsv(double time)
+{
+    for(int y = 0; y < H; y++) {
+        for(int x = 0; x < W; x++) {
+            double sum = y + x;
+            for (int i = 0; i < BLOBS_MAX; i++) {
+                double d = dist(x, y, blob[i].pos.x, blob[i].pos.y);
+                sum += sin(time) * 800.0 / d;
+            }
+            Color c = ColorFromHSV(CLAMP(sum, 20, 360), 1.0, 1.0);
+            c.a = alpha;
+            cpu_data[y * W + x] = c;
+        }
+    }
+}
+
 void draw_plasma_drop(double time)
 {
     double value = 0;
-    double t = time * 10.0;
+    double t = 100 + time * 10.0;
 
     for(int y = 0; y < H; y++) {
         for(int x = 0; x < W; x++) {
@@ -224,11 +260,11 @@ int main(int argc, char * argv[])
         }
 
         if (IsKeyDown(KEY_DOWN)) {
-            alpha--;
+            alpha -= 1;
             alpha = alpha < 0 ? 0 : alpha;
         }
         if (IsKeyDown(KEY_UP)) {
-            alpha++;
+            alpha += 1;
             alpha = alpha > 255 ? 255 : alpha;
         }
 
@@ -246,11 +282,20 @@ int main(int argc, char * argv[])
             draw_plasma_drop(time);
             break;
         case MODE_COLORFUL_CURTAINS:
+            update_blob();
             draw_colorful_curtains(time);
             break;
-        case MODE_METABALLS:
+        case MODE_METABALLS_RGB:
             update_blob();
-            draw_blobs(time);
+            draw_blobs_rgb(time);
+            break;
+        case MODE_METABALLS_HSV:
+            update_blob();
+            draw_blobs_hsv(time);
+            break;
+        case MODE_METABALLS_WAVY_HSV:
+            update_blob();
+            draw_wavy_blobs_hsv(time);
             break;
         }
 
