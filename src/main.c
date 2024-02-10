@@ -8,41 +8,148 @@
 #define H 200
 #define DROP_SIZE 100
 
+#define MODE_PLASMA_DROP 1
+#define MODE_COLORFUL_CURTAINS 2
+#define MODE_METABALLS 3
+#define MODE_MAX 3
+
+#define BLOBS_MAX 10
+
 Color cpu_data[W * H];
-Vector2 drop_velocity = {1, 1};
-Vector2 drop = {0};
+int alpha = 255;
+
+struct drop {
+    Vector2 vel;
+    Vector2 pos;
+} drop;
+
+struct blob {
+    Vector2 vel;
+    Vector2 pos;
+    int radius;
+};
+
+static int random (int lower, int upper)
+{
+    return (rand() % (upper - lower + 1)) + lower;
+}
+
+struct blob blob[BLOBS_MAX];
+
+int mode = MODE_PLASMA_DROP;
 
 inline double dist(double x1, double y1, double x2, double y2)
 {
     return sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
 }
 
+void update_blob()
+{
+    for (int i = 0; i < BLOBS_MAX; i++) {
+        blob[i].pos.x += blob[i].vel.x;
+        blob[i].pos.y += blob[i].vel.y;
+
+        if (blob[i].pos.x + blob[i].radius > W - 1) {
+            blob[i].pos.x = W - 1 - blob[i].radius;
+            blob[i].vel.x *= -1;
+        }
+        if (blob[i].pos.x - blob[i].radius < 0) {
+            blob[i].pos.x = blob[i].radius;
+            blob[i].vel.x *= -1;
+        }
+        if (blob[i].pos.y + blob[i].radius > H - 1) {
+            blob[i].pos.y = H - blob[i].radius;
+            blob[i].vel.y *= -1;
+        }
+        if (blob[i].pos.y - blob[i].radius < 0) {
+            blob[i].pos.y = blob[i].radius;
+            blob[i].vel.y *= -1;
+        }
+    }
+}
+
 void update_drop()
 {
     double drop_half = DROP_SIZE / 2.0;
 
-    drop.x += drop_velocity.x;
-    drop.y += drop_velocity.y;
+    drop.pos.x += drop.vel.x;
+    drop.pos.y += drop.vel.y;
 
-    if (drop.x + drop_half > W - 1) {
-        drop.x = W - 1 - drop_half;
-        drop_velocity.x *= -1;
+    if (drop.pos.x + drop_half > W - 1) {
+        drop.pos.x = W - 1 - drop_half;
+        drop.vel.x *= -1;
     }
-    if (drop.x - drop_half < 0) {
-        drop.x = drop_half;
-        drop_velocity.x *= -1;
+    if (drop.pos.x - drop_half < 0) {
+        drop.pos.x = drop_half;
+        drop.vel.x *= -1;
     }
-    if (drop.y + drop_half > H - 1) {
-        drop.y = H - drop_half;
-        drop_velocity.y *= -1;
+    if (drop.pos.y + drop_half > H - 1) {
+        drop.pos.y = H - drop_half;
+        drop.vel.y *= -1;
     }
-    if (drop.y - drop_half < 0) {
-        drop.y = drop_half;
-        drop_velocity.y *= -1;
+    if (drop.pos.y - drop_half < 0) {
+        drop.pos.y = drop_half;
+        drop.vel.y *= -1;
     }
 }
 
-void draw(double time, int num_dists)
+void init_blob()
+{
+    for (int i = 0; i < BLOBS_MAX; i++) {
+        blob[i].pos.x = random(0, W);
+        blob[i].pos.y = random(0, H);
+        blob[i].vel.x = 1;
+        blob[i].vel.y = 1;
+        blob[i].radius = random(W / 30, W / 5);
+    }
+}
+
+void init_drop()
+{
+    drop.pos.x = W / 2;
+    drop.pos.y = H / 2;
+    drop.vel.x = 1;
+    drop.vel.y = 1;
+}
+
+void draw_blobs(double time)
+{
+    for (int x = 0; x < W; x++) {
+        for (int y = 0; y < H; y++) {
+            double sum = 0;
+            for (int i = 0; i < BLOBS_MAX; i++) {
+                int xdif = x - blob[i].pos.x;
+                int ydif = y - blob[i].pos.y;
+                double d = sqrt((xdif * xdif) + (ydif * ydif));
+                sum += (double)blob[i].radius / d;
+            }
+            int r = (255 + (int)sum * 1000) % 255;
+            int g = 255 - r;
+            int b = 32 + sum * 50;
+            cpu_data[y * W + x] = (Color) { r, g, b, alpha };
+        }
+    }
+}
+
+void draw_colorful_curtains(double time)
+{
+    double t = time;
+    for(int y = 0; y < H; y++) {
+        for(int x = 0; x < W; x++) {
+            double u = x / (double)W;
+            double v = y / (double)H;
+            int r = sin(t + 9.0 + sin(t + sin(u) + cos(v))) * W / 2.0;
+            int g = sin(t + 7.0 + sin(u) + cos(v)) * H * 2;
+            int b = sin(t + 5.0 + cos(u) + sin(v)) * sin(u * 20.0 * sin(u + v + t)) * W;
+            r += dist(x, y, r, g);
+            g += dist(x, y, g, r);
+            b += dist(x, y, g, b);
+            cpu_data[y * W + x] = (Color) { r, g, b, alpha };
+        }
+    }
+}
+
+void draw_plasma_drop(double time)
 {
     double value = 0;
     double t = time * 10.0;
@@ -59,7 +166,7 @@ void draw(double time, int num_dists)
             value += sin(d1) + sin(d2) + sin(d3) + sin(d4);
 
             // droplet
-            double drop_dist = dist(x, y, drop.x, drop.y);
+            double drop_dist = dist(x, y, drop.pos.x, drop.pos.y);
             if (drop_dist < DROP_SIZE / 2.0) {
                 d1 = dist(x, y, W, H) / 27.0;
                 d2 = dist(x, y, W / 2.0, H / 2.0) / 24.0;
@@ -75,8 +182,7 @@ void draw(double time, int num_dists)
             int r = 100 + color + cos(t / 10.0) * 20;
             int g = 10 + color;
             int b = 10 + 255 - (color * sin(t / 400.0));
-            int a = 255;
-            cpu_data[y * W + x] = (Color) { r, g, b, a };
+            cpu_data[y * W + x] = (Color) { r, g, b, alpha };
         }
     }
 }
@@ -84,7 +190,6 @@ void draw(double time, int num_dists)
 int main(int argc, char * argv[])
 {
     double time;
-    unsigned num_dists = 3;
 
     InitWindow(W, H, "software plasma");
 
@@ -98,6 +203,9 @@ int main(int argc, char * argv[])
     memcpy(img.data, cpu_data, (W * H * sizeof(Color)));
     Texture2D gpu_data = LoadTextureFromImage(img);
     UnloadImage(img);
+
+    init_drop();
+    init_blob();
 
     SetTargetFPS(TARGET_FPS);
     DisableCursor();
@@ -115,15 +223,45 @@ int main(int argc, char * argv[])
             }
         }
 
-        update_drop();
-        draw(time, num_dists);
+        if (IsKeyDown(KEY_DOWN)) {
+            alpha--;
+            alpha = alpha < 0 ? 0 : alpha;
+        }
+        if (IsKeyDown(KEY_UP)) {
+            alpha++;
+            alpha = alpha > 255 ? 255 : alpha;
+        }
+
+        if (IsKeyDown(KEY_SPACE)) {
+            WaitTime(.2);
+            mode++;
+            if (mode > MODE_MAX) {
+                mode = MODE_PLASMA_DROP;
+            }
+        }
+
+        switch(mode) {
+        case MODE_PLASMA_DROP:
+            update_drop();
+            draw_plasma_drop(time);
+            break;
+        case MODE_COLORFUL_CURTAINS:
+            draw_colorful_curtains(time);
+            break;
+        case MODE_METABALLS:
+            update_blob();
+            draw_blobs(time);
+            break;
+        }
+
         BeginDrawing();
-            UpdateTexture(gpu_data, cpu_data);
-            Rectangle source = {0, 0, W, H};
-            Rectangle dest = {0, 0, GetRenderWidth(), GetRenderHeight()};
-            Vector2 origin = {0, 0};
-            DrawTexturePro(gpu_data, source, dest, origin, 0.0, WHITE);
-            DrawFPS(10, 10);
+        UpdateTexture(gpu_data, cpu_data);
+        Rectangle source = {0, 0, W, H};
+        Rectangle dest = {0, 0, GetRenderWidth(), GetRenderHeight()};
+        Vector2 origin = {0, 0};
+        DrawTexturePro(gpu_data, source, dest, origin, 0.0, WHITE);
+        DrawFPS(10, 10);
+        DrawText(TextFormat("Alpha: %d", alpha), 10, 30, 20, GREEN);
         EndDrawing();
 
     }
