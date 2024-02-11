@@ -3,6 +3,10 @@
 #include <math.h>
 #include "raylib.h"
 
+#if defined(PLATFORM_WEB)
+    #include <emscripten/emscripten.h>
+#endif
+
 #define TARGET_FPS 100
 #define W 320
 #define H 200
@@ -19,6 +23,7 @@
 
 #define CLAMP(x, low, high)  (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
 
+Texture2D gpu_data;
 Color cpu_data[W * H];
 int alpha = 255;
 
@@ -33,7 +38,7 @@ struct blob {
     int radius;
 };
 
-static int random (int lower, int upper)
+static int randrange (int lower, int upper)
 {
     return (rand() % (upper - lower + 1)) + lower;
 }
@@ -42,7 +47,7 @@ struct blob blob[BLOBS_MAX];
 
 int mode = MODE_PLASMA_DROP;
 
-inline double dist(double x1, double y1, double x2, double y2)
+double dist(double x1, double y1, double x2, double y2)
 {
     return sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
 }
@@ -50,11 +55,11 @@ inline double dist(double x1, double y1, double x2, double y2)
 void init_blob()
 {
     for (int i = 0; i < BLOBS_MAX; i++) {
-        blob[i].pos.x = random(0, W);
-        blob[i].pos.y = random(0, H);
+        blob[i].pos.x = randrange(0, W);
+        blob[i].pos.y = randrange(0, H);
         blob[i].vel.x = 1;
         blob[i].vel.y = 1;
-        blob[i].radius = random(10, 30);
+        blob[i].radius = randrange(10, 30);
     }
 }
 
@@ -223,10 +228,74 @@ void draw_plasma_drop(double time)
     }
 }
 
-int main(int argc, char * argv[])
+void update()
 {
     double time;
+    time = GetTime();
 
+    if (IsKeyDown(KEY_F)) {
+        WaitTime(.2);
+        if (IsWindowFullscreen()) {
+            RestoreWindow();
+        } else {
+            ToggleBorderlessWindowed();
+        }
+    }
+
+    if (IsKeyDown(KEY_DOWN)) {
+        alpha -= 1;
+        alpha = alpha < 0 ? 0 : alpha;
+    }
+    if (IsKeyDown(KEY_UP)) {
+        alpha += 1;
+        alpha = alpha > 255 ? 255 : alpha;
+    }
+
+    if (IsKeyDown(KEY_SPACE)) {
+        WaitTime(.2);
+        mode++;
+        if (mode > MODE_MAX) {
+            mode = MODE_PLASMA_DROP;
+        }
+    }
+
+    switch(mode) {
+    case MODE_PLASMA_DROP:
+        update_drop();
+        draw_plasma_drop(time);
+        break;
+    case MODE_COLORFUL_CURTAINS:
+        update_blob();
+        draw_colorful_curtains(time);
+        break;
+    case MODE_METABALLS_RGB:
+        update_blob();
+        draw_blobs_rgb(time);
+        break;
+    case MODE_METABALLS_HSV:
+        update_blob();
+        draw_blobs_hsv(time);
+        break;
+    case MODE_METABALLS_WAVY_HSV:
+        update_blob();
+        draw_wavy_blobs_hsv(time);
+        break;
+    }
+
+    BeginDrawing();
+        ClearBackground(WHITE);
+        UpdateTexture(gpu_data, cpu_data);
+        Rectangle source = {0, 0, W, H};
+        Rectangle dest = {0, 0, GetRenderWidth(), GetRenderHeight()};
+        Vector2 origin = {0, 0};
+        DrawTexturePro(gpu_data, source, dest, origin, 0.0, WHITE);
+        DrawFPS(10, 10);
+        DrawText(TextFormat("Alpha: %d", alpha), 10, 30, 20, GREEN);
+    EndDrawing();
+}
+
+int main(int argc, char * argv[])
+{
     InitWindow(W, H, "software plasma");
 
     Image img = {
@@ -237,80 +306,24 @@ int main(int argc, char * argv[])
     };
     img.data = (Color *)malloc(W * H * sizeof(Color));
     memcpy(img.data, cpu_data, (W * H * sizeof(Color)));
-    Texture2D gpu_data = LoadTextureFromImage(img);
+    gpu_data = LoadTextureFromImage(img);
     UnloadImage(img);
 
     init_drop();
     init_blob();
 
+#if defined(PLATFORM_WEB)
+    emscripten_set_main_loop(update, 120, 1);
+#else
+
     SetTargetFPS(TARGET_FPS);
     DisableCursor();
     ToggleBorderlessWindowed();
     while (!WindowShouldClose()) {
-
-        time = GetTime();
-
-        if (IsKeyDown(KEY_F)) {
-            WaitTime(.2);
-            if (IsWindowFullscreen()) {
-                RestoreWindow();
-            } else {
-                ToggleBorderlessWindowed();
-            }
-        }
-
-        if (IsKeyDown(KEY_DOWN)) {
-            alpha -= 1;
-            alpha = alpha < 0 ? 0 : alpha;
-        }
-        if (IsKeyDown(KEY_UP)) {
-            alpha += 1;
-            alpha = alpha > 255 ? 255 : alpha;
-        }
-
-        if (IsKeyDown(KEY_SPACE)) {
-            WaitTime(.2);
-            mode++;
-            if (mode > MODE_MAX) {
-                mode = MODE_PLASMA_DROP;
-            }
-        }
-
-        switch(mode) {
-        case MODE_PLASMA_DROP:
-            update_drop();
-            draw_plasma_drop(time);
-            break;
-        case MODE_COLORFUL_CURTAINS:
-            update_blob();
-            draw_colorful_curtains(time);
-            break;
-        case MODE_METABALLS_RGB:
-            update_blob();
-            draw_blobs_rgb(time);
-            break;
-        case MODE_METABALLS_HSV:
-            update_blob();
-            draw_blobs_hsv(time);
-            break;
-        case MODE_METABALLS_WAVY_HSV:
-            update_blob();
-            draw_wavy_blobs_hsv(time);
-            break;
-        }
-
-        BeginDrawing();
-        UpdateTexture(gpu_data, cpu_data);
-        Rectangle source = {0, 0, W, H};
-        Rectangle dest = {0, 0, GetRenderWidth(), GetRenderHeight()};
-        Vector2 origin = {0, 0};
-        DrawTexturePro(gpu_data, source, dest, origin, 0.0, WHITE);
-        DrawFPS(10, 10);
-        DrawText(TextFormat("Alpha: %d", alpha), 10, 30, 20, GREEN);
-        EndDrawing();
-
+        update();
     }
     EnableCursor();
+#endif
 
     CloseWindow();
     return 0;
