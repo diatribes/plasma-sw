@@ -11,6 +11,7 @@
 #define W 320
 #define H 200
 #define DROP_SIZE 100
+#define BLOBS_MAX 10
 
 #define MODE_PLASMA_DROP 1
 #define MODE_COLORFUL_CURTAINS 2
@@ -19,13 +20,7 @@
 #define MODE_METABALLS_WAVY_HSV 5
 #define MODE_MAX 5
 
-#define BLOBS_MAX 10
-
 #define CLAMP(x, low, high)  (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
-
-Texture2D gpu_data;
-Color cpu_data[W * H];
-int alpha = 255;
 
 struct drop {
     Vector2 vel;
@@ -36,16 +31,17 @@ struct blob {
     Vector2 vel;
     Vector2 pos;
     int radius;
-};
+} blob[BLOBS_MAX];
+
+Texture2D gpu_data;
+Color cpu_data[W * H];
+int alpha = 255;
+int mode = MODE_PLASMA_DROP;
 
 static int randrange (int lower, int upper)
 {
     return (rand() % (upper - lower + 1)) + lower;
 }
-
-struct blob blob[BLOBS_MAX];
-
-int mode = MODE_PLASMA_DROP;
 
 extern inline double dist(double x1, double y1, double x2, double y2)
 {
@@ -228,7 +224,7 @@ void draw_plasma_drop(double time)
     }
 }
 
-void update()
+void main_loop_body()
 {
     double time;
     time = GetTime();
@@ -313,14 +309,14 @@ int main(int argc, char * argv[])
     init_blob();
 
 #if defined(PLATFORM_WEB)
-    emscripten_set_main_loop(update, 120, 1);
+    emscripten_set_main_loop(main_loop_body, 120, 1);
 #else
 
     SetTargetFPS(TARGET_FPS);
     DisableCursor();
     ToggleBorderlessWindowed();
     while (!WindowShouldClose()) {
-        update();
+        main_loop_body();
     }
     EnableCursor();
 #endif
