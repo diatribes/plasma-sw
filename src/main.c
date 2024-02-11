@@ -47,7 +47,7 @@ struct blob blob[BLOBS_MAX];
 
 int mode = MODE_PLASMA_DROP;
 
-double dist(double x1, double y1, double x2, double y2)
+extern inline double dist(double x1, double y1, double x2, double y2)
 {
     return sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
 }
