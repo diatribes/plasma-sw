@@ -229,8 +229,7 @@ void main_loop_body()
     double time;
     time = GetTime();
 
-    if (IsKeyDown(KEY_F)) {
-        WaitTime(.2);
+    if (IsKeyPressed(KEY_F)) {
         if (IsWindowFullscreen()) {
             RestoreWindow();
         } else {
@@ -247,8 +246,7 @@ void main_loop_body()
         alpha = alpha > 255 ? 255 : alpha;
     }
 
-    if (IsKeyDown(KEY_SPACE)) {
-        WaitTime(.2);
+    if (IsKeyPressed(KEY_SPACE)) {
         mode++;
         if (mode > MODE_MAX) {
             mode = MODE_PLASMA_DROP;
