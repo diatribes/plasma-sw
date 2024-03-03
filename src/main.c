@@ -2,12 +2,13 @@
 #include <string.h>
 #include <math.h>
 #include "raylib.h"
+#include "raymath.h"
 
 #if defined(PLATFORM_WEB)
     #include <emscripten/emscripten.h>
 #endif
 
-#define TARGET_FPS 100
+#define TARGET_FPS 60
 #define W 320
 #define H 200
 #define DROP_SIZE 100
@@ -121,17 +122,22 @@ void draw_blobs_rgb(double time)
 {
     for (int x = 0; x < W; x++) {
         for (int y = 0; y < H; y++) {
+            double t = time; 
+            double d1 = dist(x + t, y, W, H) / 17.0;
+            double d2 = dist(x, y + t * 2.0, W / 2.0, H / 2.0) / 14.0;
+            double d3 = dist(x, y + t * 1.0, W * 2, H * 2) / 13.0;
+            double d4 = dist(x + t, y, 0, 0) / 12.0;
+            float value = sin(d1) + sin(d2) + sin(d3) + sin(d4) + sin(t);
+            value *= W / 2.0;
             double sum = 0;
             for (int i = 0; i < BLOBS_MAX; i++) {
-                int xdif = x - blob[i].pos.x;
-                int ydif = y - blob[i].pos.y;
-                double d = sqrt((xdif * xdif) + (ydif * ydif));
-                sum += (double)blob[i].radius / d;
+                double d = dist(x, y, blob[i].pos.x, blob[i].pos.y);
+                sum += 400.0 * (double)blob[i].radius / d;
             }
-            int r = (255 + (int)sum * 1000) % 255;
-            int g = 255 - r;
-            int b = 32 + sum * 50;
-            cpu_data[y * W + x] = (Color) { r, g, b, alpha };
+            value = (sum + value) / 5.0;
+            Color c = ColorFromHSV(value, 1.0, 1.0);
+            c.a = alpha;
+            cpu_data[y * W + x] = c;
         }
     }
 }
@@ -307,16 +313,14 @@ int main(int argc, char * argv[])
     init_blob();
 
 #if defined(PLATFORM_WEB)
-    emscripten_set_main_loop(main_loop_body, 120, 1);
+    emscripten_set_main_loop(main_loop_body, TARGET_FPS, 1);
 #else
 
     SetTargetFPS(TARGET_FPS);
-    DisableCursor();
     ToggleBorderlessWindowed();
     while (!WindowShouldClose()) {
         main_loop_body();
     }
-    EnableCursor();
 #endif
 
     CloseWindow();
